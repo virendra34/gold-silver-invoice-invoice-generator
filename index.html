@@ -34,7 +34,8 @@ button:hover { background-color: #45a049; }
 .remove-btn:hover { background-color: #c82333; }
 
 table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 16px; }
-th, td { padding: 12px; border: 1px solid #999; font-weight: normal; color: #000; }
+th, td { padding: 12px; border: 1px solid #999; color: #000; }
+th { font-weight: bold; } /* Make table headers bold */
 tbody tr:nth-child(even) { background-color: #f9f9f9; }
 tfoot tr td, tfoot tr th { background-color: #f0f0f0; }
 .left { text-align: left; }
@@ -99,10 +100,7 @@ hr { margin: 25px 0; border: 1px dashed #ccc; }
 <tbody></tbody>
 <tfoot></tfoot>
 </table>
-<button id="downloadBtn" style="display:none; margin-top:15px;" onclick="downloadPDF()">Download Invoice as PDF</button>
 </div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
 // LocalStorage helpers
@@ -222,18 +220,6 @@ function generateInvoice() {
     `;
 
     invoiceTable.style.display = "table";
-    downloadBtn.style.display = "inline-block";
-}
-
-// Download PDF
-function downloadPDF() {
-    html2pdf().set({
-        margin: 0.5,
-        filename: 'Invoice.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-    }).from(document.getElementById('invoiceContainer')).save();
 }
 
 // DOM elements
@@ -243,7 +229,6 @@ const goldMakingInput = document.getElementById("goldMaking");
 const silverMakingInput = document.getElementById("silverMaking");
 const gstInput = document.getElementById("gst");
 const invoiceTable = document.getElementById("invoiceTable");
-const downloadBtn = document.getElementById("downloadBtn");
 
 window.onload = () => {
     loadItems("gold");
