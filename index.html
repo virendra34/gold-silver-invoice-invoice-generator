@@ -4,65 +4,60 @@
 <meta charset="UTF-8">
 <title>Gold & Silver Invoice</title>
 <style>
-    body { font-family: Arial, sans-serif; margin: 20px; max-width: 100%; }
-    input, button { padding: 6px; margin: 5px 0; box-sizing: border-box; font-size: 16px; color: #000; }
-    label { display: block; margin-top: 10px; font-weight: bold; }
-    button { cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 4px; }
-    button:hover { background-color: #45a049; }
+body { font-family: Arial, sans-serif; margin: 20px; max-width: 100%; }
+input, button { padding: 6px; margin: 5px 0; box-sizing: border-box; font-size: 16px; color: #000; }
+label { display: block; margin-top: 10px; font-weight: bold; }
+button { cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 4px; }
+button:hover { background-color: #45a049; }
 
-    /* FIXED WIDTH INPUTS WITH SEPARATOR AND NORMAL COLOR */
-    .item-name { 
-        width: 160px; 
-        padding: 6px; 
-        border: 1px solid #ccc; 
-        border-right: 3px solid #007bff; /* Blue right border */
-        font-weight: normal; 
-        color: #000; 
-    }
-    .item-value { 
-        width: 160px; 
-        padding: 6px; 
-        border: 1px solid #ccc; 
-        border-right: 3px solid #28a745; /* Green right border for separation */
-        font-weight: normal; 
-        color: #000; 
-    }
-    .remove-btn {
-        width: 50px;
-        background-color: #dc3545;
-        border-radius: 4px;
-    }
-    .remove-btn:hover { background-color: #c82333; }
+.item-name { 
+    width: 160px; 
+    padding: 6px; 
+    border: 1px solid #ccc; 
+    border-right: 3px solid #007bff; 
+    font-weight: normal; 
+    color: #000; 
+}
+.item-value { 
+    width: 160px; 
+    padding: 6px; 
+    border: 1px solid #ccc; 
+    border-right: 3px solid #28a745; 
+    font-weight: normal; 
+    color: #000; 
+}
+.remove-btn {
+    width: 50px;
+    background-color: #dc3545;
+    border-radius: 4px;
+}
+.remove-btn:hover { background-color: #c82333; }
 
-    /* TABLE WITH BORDERS, NORMAL TEXT */
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 16px; }
-    th, td { padding: 12px; border: 1px solid #999; font-weight: normal; color: #000; }
-    tbody tr:nth-child(even) { background-color: #f9f9f9; }
-    tfoot tr td, tfoot tr th { background-color: #f0f0f0; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 16px; }
+th, td { padding: 12px; border: 1px solid #999; font-weight: normal; color: #000; }
+tbody tr:nth-child(even) { background-color: #f9f9f9; }
+tfoot tr td, tfoot tr th { background-color: #f0f0f0; }
+.left { text-align: left; }
+.right { text-align: right; }
 
-    .left { text-align: left; }
-    .right { text-align: right; }
+tfoot tr:last-child td, tfoot tr:last-child th { font-weight: bold; }
 
-    /* Grand total bold */
-    tfoot tr:last-child td, tfoot tr:last-child th { font-weight: bold; }
+h3 { margin-top: 25px; color: #333; }
+hr { margin: 25px 0; border: 1px dashed #ccc; }
 
-    h3 { margin-top: 25px; color: #333; }
-    hr { margin: 25px 0; border: 1px dashed #ccc; }
+#invoiceContainer { padding: 15px; border: 1px solid #ccc; border-radius: 5px; background-color: #fff; }
 
-    #invoiceContainer { padding: 15px; border: 1px solid #ccc; border-radius: 5px; background-color: #fff; }
-
-    @media (max-width: 600px) {
-        .item-name, .item-value, .remove-btn { width: 100%; margin: 5px 0; border-right: 1px solid #ccc; }
-        table { display: block; overflow-x: auto; }
-        button { width: 100%; }
-    }
+@media (max-width: 600px) {
+    .item-name, .item-value, .remove-btn { width: 100%; margin: 5px 0; border-right: 1px solid #ccc; }
+    table { display: block; overflow-x: auto; }
+    button { width: 100%; }
+}
 </style>
 </head>
 <body>
 
 <h2 style="color:#222;">Gold & Silver Invoice Generator</h2>
 
-<!-- GOLD SECTION -->
 <h3>Gold Items</h3>
 <div id="goldItems"></div>
 <button onclick="addItem('gold')">➕ Add Gold Item</button>
@@ -78,7 +73,6 @@
 
 <hr>
 
-<!-- SILVER SECTION -->
 <h3>Silver Items</h3>
 <div id="silverItems"></div>
 <button onclick="addItem('silver')">➕ Add Silver Item</button>
@@ -93,7 +87,6 @@
 
 <button onclick="generateInvoice()">Generate Combined Invoice</button>
 
-<!-- INVOICE -->
 <div id="invoiceContainer">
 <table id="invoiceTable" style="display:none;">
 <thead>
@@ -112,11 +105,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
-/* ---------- STORAGE ---------- */
+// LocalStorage helpers
 const save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
 const load = (k,d) => JSON.parse(localStorage.getItem(k)) ?? d;
 
-/* ---------- ITEMS ---------- */
+// Add dynamic items
 function addItem(type, name="", weight="") {
     const c = document.getElementById(type + "Items");
     const r = document.createElement("div");
@@ -129,10 +122,7 @@ function addItem(type, name="", weight="") {
     `;
     const inputs = r.querySelectorAll("input");
     inputs.forEach(i => i.oninput = () => saveItems(type));
-    r.querySelector(".remove-btn").onclick = () => {
-        r.remove();
-        saveItems(type);
-    };
+    r.querySelector(".remove-btn").onclick = () => { r.remove(); saveItems(type); };
     c.appendChild(r);
     saveItems(type);
 }
@@ -152,7 +142,7 @@ function loadItems(type) {
     else items.forEach(i => addItem(type, i.name, i.weight));
 }
 
-/* ---------- INVOICE ---------- */
+// Generate Invoice
 function generateInvoice() {
     const goldPrice = +goldPriceInput.value;
     const silverPrice = +silverPriceInput.value;
@@ -167,56 +157,75 @@ function generateInvoice() {
     tbody.innerHTML = "";
     tfoot.innerHTML = "";
 
-    let goldTotal = 0, silverTotal = 0, silverMakingTotal = 0;
+    let goldTotal = 0, silverTotal = 0, goldWeightTotal = 0, silverWeightTotal = 0;
+    let goldMakingTotal = 0, silverMakingTotal = 0;
 
+    // Gold items
     document.querySelectorAll("#goldItems .item-row").forEach(r => {
         const name = r.children[0].value.trim();
         const w = +r.children[1].value;
         if (name && w > 0) {
             const amt = w * goldPrice;
             goldTotal += amt;
-            tbody.innerHTML += `
-                <tr>
-                    <td class="left">${name}</td>
-                    <td class="right">${w.toFixed(2)}</td>
-                    <td class="right">${amt.toFixed(2)}</td>
-                </tr>`;
+            goldWeightTotal += w;
+            tbody.innerHTML += `<tr>
+                <td class="left">${name}</td>
+                <td class="right">${w.toFixed(2)}</td>
+                <td class="right">${amt.toFixed(2)}</td>
+            </tr>`;
         }
     });
-    const goldMaking = goldTotal * goldMakingPct / 100;
+    goldMakingTotal = goldTotal * goldMakingPct / 100;
 
+    // Silver items
     document.querySelectorAll("#silverItems .item-row").forEach(r => {
         const name = r.children[0].value.trim();
         const w = +r.children[1].value;
         if (name && w > 0) {
             const amt = w * silverPrice;
             silverTotal += amt;
+            silverWeightTotal += w;
             silverMakingTotal += w * silverMakingPerGram;
-            tbody.innerHTML += `
-                <tr>
-                    <td class="left">${name}</td>
-                    <td class="right">${w.toFixed(2)}</td>
-                    <td class="right">${amt.toFixed(2)}</td>
-                </tr>`;
+            tbody.innerHTML += `<tr>
+                <td class="left">${name}</td>
+                <td class="right">${w.toFixed(2)}</td>
+                <td class="right">${amt.toFixed(2)}</td>
+            </tr>`;
         }
     });
 
-    const subtotal = goldTotal + silverTotal + goldMaking + silverMakingTotal;
+    const subtotalGold = goldTotal + goldMakingTotal;
+    const subtotalSilver = silverTotal + silverMakingTotal;
+    const subtotal = subtotalGold + subtotalSilver;
     const gstAmt = subtotal * gstPct / 100;
     const grandTotal = subtotal + gstAmt;
 
     tfoot.innerHTML = `
-        <tr><th colspan="2" class="left">Gold Making Charges</th><th class="right">${goldMaking.toFixed(2)}</th></tr>
-        <tr><th colspan="2" class="left">Silver Making Charges</th><th class="right">${silverMakingTotal.toFixed(2)}</th></tr>
-        <tr><th colspan="2" class="left">GST (${gstPct}%)</th><th class="right">${gstAmt.toFixed(2)}</th></tr>
-        <tr><th colspan="2" class="left">Grand Total</th><th class="right">${grandTotal.toFixed(2)}</th></tr>
+        <tr>
+            <th class="left" style="font-weight:bold;">Total Gold Weight (g)</th>
+            <th class="right" style="font-weight:bold;">${goldWeightTotal.toFixed(2)}</th>
+            <th class="right" style="font-weight:bold;">${subtotalGold.toFixed(2)}</th>
+        </tr>
+        <tr>
+            <th class="left" style="font-weight:bold;">Total Silver Weight (g)</th>
+            <th class="right" style="font-weight:bold;">${silverWeightTotal.toFixed(2)}</th>
+            <th class="right" style="font-weight:bold;">${subtotalSilver.toFixed(2)}</th>
+        </tr>
+        <tr>
+            <th colspan="2" class="left" style="font-weight:bold;">GST (${gstPct}%)</th>
+            <th class="right" style="font-weight:bold;">${gstAmt.toFixed(2)}</th>
+        </tr>
+        <tr>
+            <th colspan="2" class="left">Grand Total</th>
+            <th class="right" style="font-weight:bold;">${grandTotal.toFixed(2)}</th>
+        </tr>
     `;
 
     invoiceTable.style.display = "table";
     downloadBtn.style.display = "inline-block";
 }
 
-/* ---------- DOWNLOAD PDF ---------- */
+// Download PDF
 function downloadPDF() {
     html2pdf().set({
         margin: 0.5,
@@ -227,7 +236,7 @@ function downloadPDF() {
     }).from(document.getElementById('invoiceContainer')).save();
 }
 
-/* ---------- LOAD ---------- */
+// DOM elements
 const goldPriceInput = document.getElementById("goldPrice");
 const silverPriceInput = document.getElementById("silverPrice");
 const goldMakingInput = document.getElementById("goldMaking");
@@ -250,6 +259,5 @@ window.onload = () => {
         .forEach(i => i.oninput = () => save(i.id, i.value));
 };
 </script>
-
 </body>
 </html>
