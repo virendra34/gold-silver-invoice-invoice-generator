@@ -48,6 +48,13 @@ hr { margin: 25px 0; border: 1px dashed #ccc; }
 
 #invoiceContainer { padding: 15px; border: 1px solid #ccc; border-radius: 5px; background-color: #fff; }
 
+/* Hide elements in PDF/Print */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+}
+
 @media (max-width: 600px) {
     .item-name, .item-value, .remove-btn { width: 100%; margin: 5px 0; border-right: 1px solid #ccc; }
     table { display: block; overflow-x: auto; }
@@ -102,6 +109,9 @@ hr { margin: 25px 0; border: 1px dashed #ccc; }
 </table>
 </div>
 
+<button id="downloadBtn" class="no-print" style="display:none; margin-top:15px;" onclick="downloadPDF()">Download Invoice as PDF</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 // LocalStorage helpers
 const save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
@@ -220,6 +230,12 @@ function generateInvoice() {
     `;
 
     invoiceTable.style.display = "table";
+    downloadBtn.style.display = "inline-block"; // show button after generating invoice
+}
+
+// Download PDF function
+function downloadPDF() {
+    html2pdf().from(document.getElementById("invoiceContainer")).set({ margin:0.2, filename:'Invoice.pdf', html2canvas:{ scale:2 } }).save();
 }
 
 // DOM elements
@@ -229,6 +245,7 @@ const goldMakingInput = document.getElementById("goldMaking");
 const silverMakingInput = document.getElementById("silverMaking");
 const gstInput = document.getElementById("gst");
 const invoiceTable = document.getElementById("invoiceTable");
+const downloadBtn = document.getElementById("downloadBtn");
 
 window.onload = () => {
     loadItems("gold");
