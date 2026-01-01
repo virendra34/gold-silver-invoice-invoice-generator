@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gold & Silver Invoice</title>
+<style>
+    body { font-family: Arial, sans-serif; margin: 20px; max-width: 100%; }
+    input, button { padding: 6px; margin: 5px 0; box-sizing: border-box; font-size: 16px; color: #000; }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    button { cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 4px; }
+    button:hover { background-color: #45a049; }
+
+    /* FIXED WIDTH INPUTS WITH SEPARATOR AND NORMAL COLOR */
+    .item-name { 
+        width: 160px; 
+        padding: 6px; 
+        border: 1px solid #ccc; 
+        border-right: 3px solid #007bff; /* Blue right border */
+        font-weight: normal; 
+        color: #000; 
+    }
+    .item-value { 
+        width: 160px; 
+        padding: 6px; 
+        border: 1px solid #ccc; 
+        border-right: 3px solid #28a745; /* Green right border for separation */
+        font-weight: normal; 
+        color: #000; 
+    }
+    .remove-btn {
+        width: 50px;
+        background-color: #dc3545;
+        border-radius: 4px;
+    }
+    .remove-btn:hover { background-color: #c82333; }
+
+    /* TABLE WITH BORDERS, NORMAL TEXT */
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 16px; }
+    th, td { padding: 12px; border: 1px solid #999; font-weight: normal; color: #000; }
+    tbody tr:nth-child(even) { background-color: #f9f9f9; }
+    tfoot tr td, tfoot tr th { background-color: #f0f0f0; }
+
+    .left { text-align: left; }
+    .right { text-align: right; }
+
+    /* Grand total bold */
+    tfoot tr:last-child td, tfoot tr:last-child th { font-weight: bold; }
+
+    h3 { margin-top: 25px; color: #333; }
+    hr { margin: 25px 0; border: 1px dashed #ccc; }
+
+    #invoiceContainer { padding: 15px; border: 1px solid #ccc; border-radius: 5px; background-color: #fff; }
+
+    @media (max-width: 600px) {
+        .item-name, .item-value, .remove-btn { width: 100%; margin: 5px 0; border-right: 1px solid #ccc; }
+        table { display: block; overflow-x: auto; }
+        button { width: 100%; }
+    }
+</style>
+</head>
+<body>
+
+<h2 style="color:#222;">Gold & Silver Invoice Generator</h2>
+
+<!-- GOLD SECTION -->
+<h3>Gold Items</h3>
+<div id="goldItems"></div>
+<button onclick="addItem('gold')">➕ Add Gold Item</button>
+
+<label>Gold Price / gram (₹):</label>
+<input type="number" id="goldPrice" placeholder="Enter gold price per gram">
+
+<label>Gold Making Charges (%):</label>
+<input type="number" id="goldMaking" value="7" placeholder="Gold making charges in %">
+
+<label>GST (%):</label>
+<input type="number" id="gst" value="3" placeholder="GST percentage">
+
+<hr>
+
+<!-- SILVER SECTION -->
+<h3>Silver Items</h3>
+<div id="silverItems"></div>
+<button onclick="addItem('silver')">➕ Add Silver Item</button>
+
+<label>Silver Price / gram (₹):</label>
+<input type="number" id="silverPrice" placeholder="Enter silver price per gram">
+
+<label>Silver Making Charges (₹ per gram):</label>
+<input type="number" id="silverMaking" placeholder="Silver making charges per gram">
+
+<hr>
+
+<button onclick="generateInvoice()">Generate Combined Invoice</button>
+
+<!-- INVOICE -->
+<div id="invoiceContainer">
+<table id="invoiceTable" style="display:none;">
+<thead>
+<tr>
+    <th class="left">Item</th>
+    <th class="right">Weight (g)</th>
+    <th class="right">Amount (₹)</th>
+</tr>
+</thead>
+<tbody></tbody>
+<tfoot></tfoot>
+</table>
+<button id="downloadBtn" style="display:none; margin-top:15px;" onclick="downloadPDF()">Download Invoice as PDF</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+/* ---------- STORAGE ---------- */
+const save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+const load = (k,d) => JSON.parse(localStorage.getItem(k)) ?? d;
+
+/* ---------- ITEMS ---------- */
+function addItem(type, name="", weight="") {
+    const c = document.getElementById(type + "Items");
+    const r = document.createElement("div");
+    r.className = "item-row";
+    r.style.display = "flex"; r.style.gap = "5px"; r.style.alignItems = "center";
+    r.innerHTML = `
+        <input class="item-name" placeholder="Item Name" value="${name}">
+        <input class="item-value" type="number" step="0.01" placeholder="Weight (g)" value="${weight}">
+        <button class="remove-btn" type="button">🗑️</button>
+    `;
+    const inputs = r.querySelectorAll("input");
+    inputs.forEach(i => i.oninput = () => saveItems(type));
+    r.querySelector(".remove-btn").onclick = () => {
+        r.remove();
+        saveItems(type);
+    };
+    c.appendChild(r);
+    saveItems(type);
+}
+
+function saveItems(type) {
+    const items = [];
+    document.querySelectorAll(`#${type}Items .item-row`).forEach(r => {
+        if(r.children[0].value.trim() !== "" && r.children[1].value !== "")
+            items.push({ name: r.children[0].value, weight: r.children[1].value });
+    });
+    save(type + "Items", items);
+}
+
+function loadItems(type) {
+    const items = load(type + "Items", []);
+    if (items.length === 0) addItem(type);
+    else items.forEach(i => addItem(type, i.name, i.weight));
+}
+
+/* ---------- INVOICE ---------- */
+function generateInvoice() {
+    const goldPrice = +goldPriceInput.value;
+    const silverPrice = +silverPriceInput.value;
+    const goldMakingPct = +goldMakingInput.value;
+    const silverMakingPerGram = +silverMakingInput.value;
+    const gstPct = +gstInput.value;
+
+    if(!goldPrice && !silverPrice) { alert("Enter gold or silver price!"); return; }
+
+    let tbody = invoiceTable.querySelector("tbody");
+    let tfoot = invoiceTable.querySelector("tfoot");
+    tbody.innerHTML = "";
+    tfoot.innerHTML = "";
+
+    let goldTotal = 0, silverTotal = 0, silverMakingTotal = 0;
+
+    document.querySelectorAll("#goldItems .item-row").forEach(r => {
+        const name = r.children[0].value.trim();
+        const w = +r.children[1].value;
+        if (name && w > 0) {
+            const amt = w * goldPrice;
+            goldTotal += amt;
+            tbody.innerHTML += `
+                <tr>
+                    <td class="left">${name}</td>
+                    <td class="right">${w.toFixed(2)}</td>
+                    <td class="right">${amt.toFixed(2)}</td>
+                </tr>`;
+        }
+    });
+    const goldMaking = goldTotal * goldMakingPct / 100;
+
+    document.querySelectorAll("#silverItems .item-row").forEach(r => {
+        const name = r.children[0].value.trim();
+        const w = +r.children[1].value;
+        if (name && w > 0) {
+            const amt = w * silverPrice;
+            silverTotal += amt;
+            silverMakingTotal += w * silverMakingPerGram;
+            tbody.innerHTML += `
+                <tr>
+                    <td class="left">${name}</td>
+                    <td class="right">${w.toFixed(2)}</td>
+                    <td class="right">${amt.toFixed(2)}</td>
+                </tr>`;
+        }
+    });
+
+    const subtotal = goldTotal + silverTotal + goldMaking + silverMakingTotal;
+    const gstAmt = subtotal * gstPct / 100;
+    const grandTotal = subtotal + gstAmt;
+
+    tfoot.innerHTML = `
+        <tr><th colspan="2" class="left">Gold Making Charges</th><th class="right">${goldMaking.toFixed(2)}</th></tr>
+        <tr><th colspan="2" class="left">Silver Making Charges</th><th class="right">${silverMakingTotal.toFixed(2)}</th></tr>
+        <tr><th colspan="2" class="left">GST (${gstPct}%)</th><th class="right">${gstAmt.toFixed(2)}</th></tr>
+        <tr><th colspan="2" class="left">Grand Total</th><th class="right">${grandTotal.toFixed(2)}</th></tr>
+    `;
+
+    invoiceTable.style.display = "table";
+    downloadBtn.style.display = "inline-block";
+}
+
+/* ---------- DOWNLOAD PDF ---------- */
+function downloadPDF() {
+    html2pdf().set({
+        margin: 0.5,
+        filename: 'Invoice.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    }).from(document.getElementById('invoiceContainer')).save();
+}
+
+/* ---------- LOAD ---------- */
+const goldPriceInput = document.getElementById("goldPrice");
+const silverPriceInput = document.getElementById("silverPrice");
+const goldMakingInput = document.getElementById("goldMaking");
+const silverMakingInput = document.getElementById("silverMaking");
+const gstInput = document.getElementById("gst");
+const invoiceTable = document.getElementById("invoiceTable");
+const downloadBtn = document.getElementById("downloadBtn");
+
+window.onload = () => {
+    loadItems("gold");
+    loadItems("silver");
+
+    goldPriceInput.value = load("goldPrice", "");
+    silverPriceInput.value = load("silverPrice", "");
+    goldMakingInput.value = load("goldMaking", 7);
+    silverMakingInput.value = load("silverMaking", "");
+    gstInput.value = load("gst", 3);
+
+    [goldPriceInput, silverPriceInput, goldMakingInput, silverMakingInput, gstInput]
+        .forEach(i => i.oninput = () => save(i.id, i.value));
+};
+</script>
+
+</body>
+</html>
